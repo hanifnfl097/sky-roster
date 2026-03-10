@@ -1,0 +1,83 @@
+# SkyRoster Backend — Spring Boot Configuration
+# See docs/tech/env-config.md for full variable reference.
+
+spring:
+  application:
+    name: skyroster-api
+
+  # Database (PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:skyroster_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # JPA / Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+  # Jackson
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+# Server
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api/v1
+
+# JWT Configuration
+skyroster:
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-expiry-minutes: ${JWT_ACCESS_EXPIRY_MINUTES:15}
+    refresh-expiry-days: ${JWT_REFRESH_EXPIRY_DAYS:7}
+
+  # Geofencing
+  geofence:
+    radius-meters: ${GEOFENCE_RADIUS_METERS:500}
+    sign-on-window-minutes: ${SIGN_ON_WINDOW_MINUTES:120}
+
+  # FTL Configuration (CASR 121 / ICAO defaults)
+  ftl:
+    max-7-day-hours: ${FTL_MAX_7_DAY_HOURS:30}
+    max-monthly-hours: ${FTL_MAX_MONTHLY_HOURS:100}
+    max-yearly-hours: ${FTL_MAX_YEARLY_HOURS:1050}
+    min-rest-hours: ${FTL_MIN_REST_HOURS:12}
+
+  # Cron Jobs
+  cron:
+    doc-expiry-schedule: ${CRON_DOC_EXPIRY_SCHEDULE:0 0 6 * * *}
+    doc-expiry-warning-days: ${DOC_EXPIRY_WARNING_DAYS:30,14,7}
+
+# Actuator (Health Check)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Logging
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.skyroster: DEBUG
+    org.hibernate.SQL: WARN

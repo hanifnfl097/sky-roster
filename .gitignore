@@ -1,0 +1,70 @@
+# ===========================================
+# SkyRoster — Root .gitignore
+# ===========================================
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- Logs ---
+*.log
+logs/
+
+# ===========================================
+# Backend (Spring Boot / Java / Maven)
+# ===========================================
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/*.jar
+backend/*.war
+
+# ===========================================
+# Web Admin (Next.js / Node)
+# ===========================================
+web-admin/node_modules/
+web-admin/.next/
+web-admin/out/
+web-admin/build/
+web-admin/coverage/
+web-admin/.env.local
+web-admin/.vercel
+
+# ===========================================
+# Mobile App (Flutter / Dart)
+# ===========================================
+mobile-app/.dart_tool/
+mobile-app/.packages
+mobile-app/build/
+mobile-app/.flutter-plugins
+mobile-app/.flutter-plugins-dependencies
+mobile-app/android/.gradle/
+mobile-app/android/app/build/
+mobile-app/android/local.properties
+mobile-app/ios/Pods/
+mobile-app/ios/.symlinks/
+mobile-app/ios/Flutter/Generated.xcconfig
+mobile-app/ios/Flutter/flutter_export_environment.sh
+mobile-app/.pub-cache/
+mobile-app/pubspec.lock
+
+# ===========================================
+# Agent / Brain (local only)
+# ===========================================
+.gemini/
+.agent/memory/
