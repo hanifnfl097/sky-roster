@@ -19,22 +19,22 @@ import java.util.UUID;
 @Repository
 public interface JpaCrewMemberRepository extends JpaRepository<CrewMemberEntity, UUID> {
 
-    Optional<CrewMemberEntity> findByStaffId(String staffId);
+        Optional<CrewMemberEntity> findByStaffId(String staffId);
 
-    boolean existsByStaffId(String staffId);
+        boolean existsByStaffId(String staffId);
 
-    @Query("""
-            SELECT c FROM CrewMemberEntity c
-            WHERE (:role IS NULL OR c.crewRole = :role)
-              AND (:status IS NULL OR c.status = :status)
-              AND (:search IS NULL
-                   OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(c.staffId) LIKE LOWER(CONCAT('%', :search, '%')))
-            """)
-    Page<CrewMemberEntity> findAllWithFilters(
-            @Param("role") String role,
-            @Param("status") String status,
-            @Param("search") String search,
-            Pageable pageable);
+        @Query("""
+                        SELECT c FROM CrewMemberEntity c
+                        WHERE (cast(:role as String) IS NULL OR c.crewRole = :role)
+                          AND (cast(:status as String) IS NULL OR c.status = :status)
+                          AND (cast(:search as String) IS NULL
+                               OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', cast(:search as String), '%'))
+                               OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', cast(:search as String), '%'))
+                               OR LOWER(c.staffId) LIKE LOWER(CONCAT('%', cast(:search as String), '%')))
+                        """)
+        Page<CrewMemberEntity> findAllWithFilters(
+                        @Param("role") String role,
+                        @Param("status") String status,
+                        @Param("search") String search,
+                        Pageable pageable);
 }

@@ -1,46 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-
-/** Demo crew data for UI rendering before backend is connected. */
-const DEMO_CREW = [
-    {
-        id: "1", staffId: "SKY-001", firstName: "Budi", lastName: "Hartono",
-        crewRole: "CAPTAIN", crewCategory: "FLIGHT_CREW", baseStation: "CGK",
-        status: "ACTIVE", groundingReason: null,
-        fullName: "Budi Hartono", documents: [],
-        createdAt: "2026-01-15T08:00:00Z", updatedAt: "2026-03-01T10:00:00Z",
-    },
-    {
-        id: "2", staffId: "SKY-002", firstName: "Siti", lastName: "Rahayu",
-        crewRole: "FIRST_OFFICER", crewCategory: "FLIGHT_CREW", baseStation: "CGK",
-        status: "ACTIVE", groundingReason: null,
-        fullName: "Siti Rahayu", documents: [],
-        createdAt: "2026-01-20T08:00:00Z", updatedAt: "2026-03-02T10:00:00Z",
-    },
-    {
-        id: "3", staffId: "SKY-003", firstName: "Wayan", lastName: "Putra",
-        crewRole: "PURSER", crewCategory: "CABIN_CREW", baseStation: "DPS",
-        status: "GROUNDED", groundingReason: "MEDEX expired",
-        fullName: "Wayan Putra", documents: [],
-        createdAt: "2026-02-01T08:00:00Z", updatedAt: "2026-03-05T10:00:00Z",
-    },
-    {
-        id: "4", staffId: "SKY-004", firstName: "Dewi", lastName: "Lestari",
-        crewRole: "FLIGHT_ATTENDANT", crewCategory: "CABIN_CREW", baseStation: "SUB",
-        status: "ACTIVE", groundingReason: null,
-        fullName: "Dewi Lestari", documents: [],
-        createdAt: "2026-02-10T08:00:00Z", updatedAt: "2026-03-06T10:00:00Z",
-    },
-    {
-        id: "5", staffId: "SKY-005", firstName: "Ahmad", lastName: "Rizki",
-        crewRole: "CAPTAIN", crewCategory: "FLIGHT_CREW", baseStation: "CGK",
-        status: "ON_LEAVE", groundingReason: null,
-        fullName: "Ahmad Rizki", documents: [],
-        createdAt: "2026-02-15T08:00:00Z", updatedAt: "2026-03-08T10:00:00Z",
-    },
-];
+import { listCrew, registerCrew } from "@/services/crew-service";
+import type { CrewMember } from "@/types";
 
 const ROLE_OPTIONS = [
     { value: "", label: "All Roles" },
@@ -100,19 +63,34 @@ export default function CrewListPage(): React.JSX.Element {
     const [search, setSearch] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
 
-    const filteredCrew = DEMO_CREW.filter((c) => {
-        if (roleFilter && c.crewRole !== roleFilter) return false;
-        if (statusFilter && c.status !== statusFilter) return false;
-        if (search) {
-            const q = search.toLowerCase();
-            return (
-                c.firstName.toLowerCase().includes(q) ||
-                c.lastName.toLowerCase().includes(q) ||
-                c.staffId.toLowerCase().includes(q)
-            );
+    const [crewList, setCrewList] = useState<CrewMember[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchCrew = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await listCrew({
+                role: roleFilter || undefined,
+                status: statusFilter || undefined,
+                search: search || undefined
+            });
+            setCrewList(data);
+        } catch (err: any) {
+            setError(err.message || "Failed to load crew members.");
+        } finally {
+            setLoading(false);
         }
-        return true;
-    });
+    };
+
+    // Debounce search and filters
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchCrew();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [roleFilter, statusFilter, search]);
 
     return (
         <div className="animate-fade-in-up">
@@ -175,9 +153,12 @@ export default function CrewListPage(): React.JSX.Element {
                 </button>
             </div>
 
-            {/* Results count */}
-            <div style={{ fontSize: 13, color: "var(--slate-500)", marginBottom: 12 }}>
-                Showing <strong>{filteredCrew.length}</strong> of {DEMO_CREW.length} crew members
+            {/* Results count & Error block */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, alignItems: "center" }}>
+                <div style={{ fontSize: 13, color: "var(--slate-500)" }}>
+                    Showing <strong>{crewList.length}</strong> crew members
+                </div>
+                {error && <div style={{ color: "var(--red-600)", fontSize: 13 }}>{error}</div>}
             </div>
 
             {/* Data Table */}
@@ -194,67 +175,107 @@ export default function CrewListPage(): React.JSX.Element {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredCrew.map((crew) => (
-                            <tr key={crew.id}>
-                                <td>
-                                    <span style={{ fontWeight: 600, color: "var(--sky-700)", fontFamily: "var(--font-mono, monospace)", fontSize: 13 }}>
-                                        {crew.staffId}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                        <div
-                                            style={{
-                                                width: 36, height: 36, borderRadius: 10,
-                                                background: `linear-gradient(135deg, ${crew.crewCategory === "FLIGHT_CREW" ? "var(--sky-400)" : "#a855f7"}, ${crew.crewCategory === "FLIGHT_CREW" ? "var(--sky-600)" : "#7c3aed"})`,
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: "white", fontSize: 14, fontWeight: 700,
-                                            }}
-                                        >
-                                            {crew.firstName[0]}{crew.lastName[0]}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, color: "var(--slate-800)", fontSize: 14 }}>
-                                                {crew.fullName}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><RoleBadge role={crew.crewRole} category={crew.crewCategory} /></td>
-                                <td>
-                                    <span style={{ fontWeight: 600, color: "var(--slate-600)", fontSize: 13 }}>
-                                        {crew.baseStation}
-                                    </span>
-                                </td>
-                                <td><StatusBadge status={crew.status} /></td>
-                                <td style={{ textAlign: "right" }}>
-                                    <Link
-                                        href={`/crew/${crew.id}`}
-                                        className="btn btn-outline btn-sm"
-                                    >
-                                        View
-                                    </Link>
+                        {loading ? (
+                            <tr>
+                                <td colSpan={6} style={{ textAlign: "center", padding: 48, color: "var(--slate-400)" }}>
+                                    Loading crew data...
                                 </td>
                             </tr>
-                        ))}
-                        {filteredCrew.length === 0 && (
+                        ) : crewList.length === 0 ? (
                             <tr>
                                 <td colSpan={6} style={{ textAlign: "center", padding: 48, color: "var(--slate-400)" }}>
                                     No crew members match your filters.
                                 </td>
                             </tr>
+                        ) : (
+                            crewList.map((crew) => (
+                                <tr key={crew.id}>
+                                    <td>
+                                        <span style={{ fontWeight: 600, color: "var(--sky-700)", fontFamily: "var(--font-mono, monospace)", fontSize: 13 }}>
+                                            {crew.staffId}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            <div
+                                                style={{
+                                                    width: 36, height: 36, borderRadius: 10,
+                                                    background: `linear-gradient(135deg, ${crew.crewCategory === "FLIGHT_CREW" ? "var(--sky-400)" : "#a855f7"}, ${crew.crewCategory === "FLIGHT_CREW" ? "var(--sky-600)" : "#7c3aed"})`,
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    color: "white", fontSize: 14, fontWeight: 700,
+                                                }}
+                                            >
+                                                {crew.firstName[0]}{crew.lastName[0]}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: "var(--slate-800)", fontSize: 14 }}>
+                                                    {crew.fullName || `${crew.firstName} ${crew.lastName}`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><RoleBadge role={crew.crewRole} category={crew.crewCategory} /></td>
+                                    <td>
+                                        <span style={{ fontWeight: 600, color: "var(--slate-600)", fontSize: 13 }}>
+                                            {crew.baseStation}
+                                        </span>
+                                    </td>
+                                    <td><StatusBadge status={crew.status} /></td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <Link
+                                            href={`/crew/${crew.id}`}
+                                            className="btn btn-outline btn-sm"
+                                        >
+                                            View
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))
                         )}
                     </tbody>
                 </table>
             </div>
 
             {/* Add Crew Modal */}
-            {showAddModal && <AddCrewModal onClose={() => setShowAddModal(false)} />}
+            {showAddModal && (
+                <AddCrewModal
+                    onClose={() => setShowAddModal(false)}
+                    onSuccess={() => {
+                        setShowAddModal(false);
+                        fetchCrew(); // Refetch
+                    }}
+                />
+            )}
         </div>
     );
 }
 
-function AddCrewModal({ onClose }: { onClose: () => void }): React.JSX.Element {
+function AddCrewModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }): React.JSX.Element {
+    const [formData, setFormData] = useState({
+        staffId: "",
+        email: "",
+        firstName: "",
+        lastName: "",
+        crewRole: "",
+        baseStation: ""
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setIsSubmitting(true);
+            setError(null);
+            await registerCrew(formData);
+            onSuccess();
+        } catch (err: any) {
+            setError(err.message || "Failed to register crew");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div
             style={{
@@ -281,43 +302,71 @@ function AddCrewModal({ onClose }: { onClose: () => void }): React.JSX.Element {
                     </button>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    <div>
-                        <label className="label" htmlFor="inp-staff-id">Staff ID</label>
-                        <input id="inp-staff-id" className="input" placeholder="SKY-006" />
+                <form onSubmit={handleSubmit}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+                        <div>
+                            <label className="label" htmlFor="inp-staff-id">Staff ID</label>
+                            <input
+                                id="inp-staff-id" required className="input" placeholder="SKY-006"
+                                value={formData.staffId} onChange={e => setFormData({ ...formData, staffId: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="label" htmlFor="inp-email">Email</label>
+                            <input
+                                id="inp-email" required className="input" type="email" placeholder="name@airline.com"
+                                value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="label" htmlFor="inp-first-name">First Name</label>
+                            <input
+                                id="inp-first-name" required className="input" placeholder="John"
+                                value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="label" htmlFor="inp-last-name">Last Name</label>
+                            <input
+                                id="inp-last-name" required className="input" placeholder="Doe"
+                                value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                            />
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                            <label className="label" htmlFor="inp-role">Role</label>
+                            <select
+                                id="inp-role" required className="input"
+                                value={formData.crewRole} onChange={e => setFormData({ ...formData, crewRole: e.target.value })}
+                            >
+                                <option value="">Select role...</option>
+                                <option value="CAPTAIN">Captain</option>
+                                <option value="FIRST_OFFICER">First Officer</option>
+                                <option value="PURSER">Purser</option>
+                                <option value="FLIGHT_ATTENDANT">Flight Attendant</option>
+                            </select>
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                            <label className="label" htmlFor="inp-base">Base Station</label>
+                            <input
+                                id="inp-base" required className="input" placeholder="CGK" maxLength={5}
+                                value={formData.baseStation} onChange={e => setFormData({ ...formData, baseStation: e.target.value.toUpperCase() })}
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="label" htmlFor="inp-email">Email</label>
-                        <input id="inp-email" className="input" type="email" placeholder="name@airline.com" />
-                    </div>
-                    <div>
-                        <label className="label" htmlFor="inp-first-name">First Name</label>
-                        <input id="inp-first-name" className="input" placeholder="John" />
-                    </div>
-                    <div>
-                        <label className="label" htmlFor="inp-last-name">Last Name</label>
-                        <input id="inp-last-name" className="input" placeholder="Doe" />
-                    </div>
-                    <div>
-                        <label className="label" htmlFor="inp-role">Role</label>
-                        <select id="inp-role" className="input">
-                            <option value="">Select role...</option>
-                            <option value="CAPTAIN">Captain</option>
-                            <option value="FIRST_OFFICER">First Officer</option>
-                            <option value="PURSER">Purser</option>
-                            <option value="FLIGHT_ATTENDANT">Flight Attendant</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="label" htmlFor="inp-base">Base Station</label>
-                        <input id="inp-base" className="input" placeholder="CGK" maxLength={5} />
-                    </div>
-                </div>
 
-                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 28 }}>
-                    <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary">Register Crew</button>
-                </div>
+                    {error && (
+                        <div style={{ padding: "12px", background: "var(--red-50)", color: "var(--red-700)", borderRadius: 6, marginBottom: 16, fontSize: 13 }}>
+                            {error}
+                        </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                        <button type="button" className="btn btn-outline" onClick={onClose} disabled={isSubmitting}>Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                            {isSubmitting ? "Registering..." : "Register Crew"}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

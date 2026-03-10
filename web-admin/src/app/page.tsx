@@ -1,8 +1,37 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { listCrew, getExpiringDocuments } from "@/services/crew-service";
+import Link from "next/link";
+
 export default function DashboardPage(): React.JSX.Element {
+  const [activeCount, setActiveCount] = useState<number | string>("—");
+  const [groundedCount, setGroundedCount] = useState<number | string>("—");
+  const [expiringDocsCount, setExpiringDocsCount] = useState<number | string>("—");
+
+  useEffect(() => {
+    async function fetchDashboardStats() {
+      try {
+        const [crew, expiringDocs] = await Promise.all([
+          listCrew(),
+          getExpiringDocuments(30)
+        ]);
+
+        setActiveCount(crew.filter((c) => c.status === "ACTIVE").length);
+        setGroundedCount(crew.filter((c) => c.status === "GROUNDED").length);
+        setExpiringDocsCount(expiringDocs.length);
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats", err);
+      }
+    }
+
+    fetchDashboardStats();
+  }, []);
+
   const STAT_CARDS = [
-    { label: "Active Crew", value: "—", icon: "👨‍✈️", color: "var(--sky-500)" },
-    { label: "Grounded", value: "—", icon: "🚫", color: "var(--red-500)" },
-    { label: "Expiring Docs", value: "—", icon: "⚠️", color: "var(--amber-500)" },
+    { label: "Active Crew", value: activeCount, icon: "👨‍✈️", color: "var(--sky-500)" },
+    { label: "Grounded", value: groundedCount, icon: "🚫", color: "var(--red-500)" },
+    { label: "Expiring Docs", value: expiringDocsCount, icon: "⚠️", color: "var(--amber-500)" },
     { label: "Flights Today", value: "—", icon: "✈️", color: "var(--green-500)" },
   ];
 
@@ -41,9 +70,14 @@ export default function DashboardPage(): React.JSX.Element {
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--slate-800)", marginBottom: 16, margin: 0 }}>
           Quick Actions
         </h2>
-        <p style={{ color: "var(--slate-500)", fontSize: 14, marginTop: 8 }}>
+        <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
+          <Link href="/crew" className="btn btn-primary">
+            Manage Crew Members
+          </Link>
+        </div>
+        <p style={{ color: "var(--slate-500)", fontSize: 14, marginTop: 16 }}>
           Navigate to <strong>Crew Members</strong> to manage crew profiles, documents, and compliance status.
-          Statistics will populate once the database is connected.
+          The statistics above represent real-time data from the PostgreSQL database.
         </p>
       </div>
     </div>
